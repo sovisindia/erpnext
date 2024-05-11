@@ -27,6 +27,7 @@ class QualityInspection(Document):
 		)
 
 		amended_from: DF.Link | None
+		arn: DF.Link | None
 		batch_no: DF.Link | None
 		bom_no: DF.Link | None
 		description: DF.SmallText | None
@@ -37,6 +38,7 @@ class QualityInspection(Document):
 		item_serial_no: DF.Link | None
 		manual_inspection: DF.Check
 		naming_series: DF.Literal["MAT-QA-.YYYY.-"]
+		number_of_copies: DF.Int
 		quality_inspection_template: DF.Link | None
 		readings: DF.Table[QualityInspectionReading]
 		reference_name: DF.DynamicLink

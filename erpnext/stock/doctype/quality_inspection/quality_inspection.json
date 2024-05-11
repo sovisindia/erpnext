@@ -24,6 +24,10 @@
   "item_name",
   "description",
   "bom_no",
+  "section_break_oeof",
+  "arn",
+  "create_arn",
+  "column_break_rdar",
   "specification_details",
   "quality_inspection_template",
   "readings",
@@ -32,7 +36,9 @@
   "verified_by",
   "column_break_17",
   "remarks",
-  "amended_from"
+  "amended_from",
+  "ps_sbreak1",
+  "number_of_copies"
  ],
  "fields": [
   {
@@ -238,6 +244,41 @@
    "fieldname": "manual_inspection",
    "fieldtype": "Check",
    "label": "Manual Inspection"
+  },
+  {
+   "fieldname": "arn",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "A.R No.",
+   "oldfieldname": "batch_no",
+   "oldfieldtype": "Link",
+   "options": "ARN"
+  },
+  {
+   "default": "1",
+   "fieldname": "number_of_copies",
+   "fieldtype": "Int",
+   "label": "Number of Copies",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "ps_sbreak1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_oeof",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "create_arn",
+   "fieldtype": "Button",
+   "label": "Create ARN"
+  },
+  {
+   "fieldname": "column_break_rdar",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-search",
@@ -245,7 +286,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-27 13:10:28.680815",
+ "modified": "2024-04-25 17:40:06.680335",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Quality Inspection",

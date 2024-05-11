@@ -19,6 +19,7 @@
   "voucher_no",
   "voucher_detail_no",
   "serial_and_batch_bundle",
+  "arn",
   "dependant_sle_voucher_detail_no",
   "section_break_11",
   "recalculate_rate",
@@ -352,6 +353,12 @@
    "fieldname": "posting_datetime",
    "fieldtype": "Datetime",
    "label": "Posting Datetime"
+  },
+  {
+   "fieldname": "arn",
+   "fieldtype": "Link",
+   "label": "A.R No.",
+   "options": "ARN"
   }
  ],
  "hide_toolbar": 1,
@@ -360,7 +367,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-27 13:10:44.486742",
+ "modified": "2024-04-25 12:19:02.575531",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Ledger Entry",

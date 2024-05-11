@@ -83,6 +83,9 @@ class WorkOrder(Document):
 		additional_operating_cost: DF.Currency
 		allow_alternative_item: DF.Check
 		amended_from: DF.Link | None
+		batch: DF.Link | None
+		batch_no: DF.Data | None
+		batch_prefix: DF.Data | None
 		batch_size: DF.Float
 		bom_no: DF.Link
 		company: DF.Link
@@ -134,6 +137,7 @@ class WorkOrder(Document):
 		total_operating_cost: DF.Currency
 		transfer_material_against: DF.Literal["", "Work Order", "Job Card"]
 		update_consumed_material_cost_in_project: DF.Check
+		use_batch_prefix: DF.Check
 		use_multi_level_bom: DF.Check
 		wip_warehouse: DF.Link | None
 	# end: auto-generated types

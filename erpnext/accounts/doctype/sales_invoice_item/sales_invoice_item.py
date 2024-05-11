@@ -86,6 +86,7 @@ class SalesInvoiceItem(Document):
 		service_start_date: DF.Date | None
 		service_stop_date: DF.Date | None
 		so_detail: DF.Data | None
+		stock: DF.Float
 		stock_qty: DF.Float
 		stock_uom: DF.Link | None
 		stock_uom_rate: DF.Currency

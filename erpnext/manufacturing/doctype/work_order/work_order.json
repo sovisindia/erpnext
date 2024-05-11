@@ -22,6 +22,12 @@
   "produced_qty",
   "process_loss_qty",
   "project",
+  "section_break_ywxj",
+  "batch_prefix",
+  "batch",
+  "use_batch_prefix",
+  "column_break_gzim",
+  "batch_no",
   "section_break_ndpq",
   "required_items",
   "work_order_configuration",
@@ -43,7 +49,6 @@
   "has_batch_no",
   "column_break_18",
   "batch_size",
-  "required_items_section",
   "materials_and_operations_tab",
   "operations_section",
   "transfer_material_against",
@@ -269,11 +274,6 @@
    "fieldtype": "Link",
    "label": "Scrap Warehouse",
    "options": "Warehouse"
-  },
-  {
-   "fieldname": "required_items_section",
-   "fieldtype": "Section Break",
-   "label": "Required Items"
   },
   {
    "fieldname": "required_items",
@@ -586,14 +586,56 @@
   {
    "fieldname": "section_break_ndpq",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_ywxj",
+   "fieldtype": "Section Break",
+   "hidden": 1
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:doc.__islocal",
+   "fieldname": "use_batch_prefix",
+   "fieldtype": "Check",
+   "label": "Use Batch Prefix"
+  },
+  {
+   "fieldname": "batch_prefix",
+   "fieldtype": "Data",
+   "label": "Batch Prefix",
+   "mandatory_depends_on": "eval:doc.__islocal && doc.use_batch_prefix"
+  },
+  {
+   "fieldname": "column_break_gzim",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.__islocal && doc.use_batch_prefix",
+   "fieldname": "batch_no",
+   "fieldtype": "Data",
+   "label": "Batch No.",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "mandatory_depends_on": "eval:!doc.use_batch_prefix",
+   "options": "Batch"
   }
  ],
  "icon": "fa fa-cogs",
  "idx": 1,
  "image_field": "image",
  "is_submittable": 1,
- "links": [],
- "modified": "2024-03-27 13:11:00.129434",
+ "links": [
+  {
+   "link_doctype": "Certificate of Analysis",
+   "link_fieldname": "work_order"
+  }
+ ],
+ "modified": "2024-05-06 09:35:06.600782",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Work Order",

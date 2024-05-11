@@ -311,6 +311,13 @@ def get_columns(filters):
 				"width": 100,
 			},
 			{
+				"label": _("A.R No."),
+				"fieldname": "arn",
+				"fieldtype": "Link",
+				"options": "ARN",
+				"width": 100,
+			},
+			{
 				"label": _("Serial No"),
 				"fieldname": "serial_no",
 				"fieldtype": "Link",
@@ -346,6 +353,7 @@ def get_columns(filters):
 
 def get_stock_ledger_entries(filters, items):
 	sle = frappe.qb.DocType("Stock Ledger Entry")
+	# TODO: Investigate ARN in SLE
 	query = (
 		frappe.qb.from_(sle)
 		.select(
@@ -367,6 +375,7 @@ def get_stock_ledger_entries(filters, items):
 			sle.batch_no,
 			sle.serial_no,
 			sle.project,
+			sle.arn,
 		)
 		.where(
 			(sle.docstatus < 2)
