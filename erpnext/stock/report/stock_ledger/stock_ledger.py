@@ -330,10 +330,10 @@ def get_columns(filters):
 				"width": 100,
 			},
 			{
-				"label": _("Project"),
-				"fieldname": "project",
+				"label": _("A.R No."),
+				"fieldname": "arn",
 				"fieldtype": "Link",
-				"options": "Project",
+				"options": "ARN",
 				"width": 100,
 			},
 			{

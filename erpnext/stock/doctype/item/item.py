@@ -57,23 +57,20 @@ class Item(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from frappe.types import DF
-
 		from erpnext.stock.doctype.item_barcode.item_barcode import ItemBarcode
 		from erpnext.stock.doctype.item_customer_detail.item_customer_detail import ItemCustomerDetail
 		from erpnext.stock.doctype.item_default.item_default import ItemDefault
 		from erpnext.stock.doctype.item_reorder.item_reorder import ItemReorder
 		from erpnext.stock.doctype.item_supplier.item_supplier import ItemSupplier
 		from erpnext.stock.doctype.item_tax.item_tax import ItemTax
-		from erpnext.stock.doctype.item_variant_attribute.item_variant_attribute import (
-			ItemVariantAttribute,
-		)
+		from erpnext.stock.doctype.item_variant_attribute.item_variant_attribute import ItemVariantAttribute
 		from erpnext.stock.doctype.uom_conversion_detail.uom_conversion_detail import UOMConversionDetail
+		from frappe.types import DF
 
 		allow_alternative_item: DF.Check
 		allow_negative_stock: DF.Check
 		asset_category: DF.Link | None
-		asset_naming_series: DF.Literal
+		asset_naming_series: DF.Literal[None]
 		attributes: DF.Table[ItemVariantAttribute]
 		auto_create_assets: DF.Check
 		barcodes: DF.Table[ItemBarcode]
@@ -88,9 +85,7 @@ class Item(Document):
 		default_bom: DF.Link | None
 		default_item_manufacturer: DF.Link | None
 		default_manufacturer_part_no: DF.Data | None
-		default_material_request_type: DF.Literal[
-			"Purchase", "Material Transfer", "Material Issue", "Manufacture", "Customer Provided"
-		]
+		default_material_request_type: DF.Literal["Purchase", "Material Transfer", "Material Issue", "Manufacture", "Customer Provided"]
 		delivered_by_supplier: DF.Check
 		description: DF.TextEditor | None
 		disabled: DF.Check
@@ -121,7 +116,7 @@ class Item(Document):
 		lead_time_days: DF.Int
 		max_discount: DF.Float
 		min_order_qty: DF.Float
-		naming_series: DF.Literal["STO-ITEM-.YYYY.-"]
+		naming_series: DF.Literal[None]
 		no_of_months: DF.Int
 		no_of_months_exp: DF.Int
 		opening_stock: DF.Float
@@ -142,7 +137,7 @@ class Item(Document):
 		taxes: DF.Table[ItemTax]
 		total_projected_qty: DF.Float
 		uoms: DF.Table[UOMConversionDetail]
-		valuation_method: DF.Literal["", "FIFO", "Moving Average", "LIFO"]
+		valuation_method: DF.Literal["", "FIFO", "Moving Average", "LIFO", "FEFO"]
 		valuation_rate: DF.Currency
 		variant_based_on: DF.Literal["Item Attribute", "Manufacturer"]
 		variant_of: DF.Link | None

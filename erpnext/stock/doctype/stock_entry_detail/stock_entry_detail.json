@@ -36,6 +36,8 @@
   "stock_uom",
   "conversion_factor",
   "sample_quantity",
+  "section_break_obei",
+  "arn",
   "rates_section",
   "basic_rate",
   "additional_cost",
@@ -604,13 +606,23 @@
   {
    "fieldname": "column_break_prps",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "arn",
+   "fieldtype": "Link",
+   "label": "A.R No.",
+   "options": "ARN"
+  },
+  {
+   "fieldname": "section_break_obei",
+   "fieldtype": "Section Break"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-02-25 15:58:40.982582",
+ "modified": "2024-04-23 21:28:29.881804",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock Entry Detail",

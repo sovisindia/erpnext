@@ -162,7 +162,7 @@
    "type": "Link"
   }
  ],
- "modified": "2024-01-18 22:09:46.221549",
+ "modified": "2024-05-05 08:57:36.586613",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Payables",
@@ -179,24 +179,28 @@
    "doc_view": "",
    "label": "Accounts Payable",
    "link_to": "Accounts Payable",
+   "options": "{}",
    "type": "Report"
   },
   {
    "doc_view": "",
    "label": "Purchase Invoice",
    "link_to": "Purchase Invoice",
+   "options": "{}",
    "type": "DocType"
   },
   {
    "doc_view": "",
    "label": "Journal Entry",
    "link_to": "Journal Entry",
+   "options": "{}",
    "type": "DocType"
   },
   {
    "doc_view": "",
    "label": "Payment Entry",
    "link_to": "Payment Entry",
+   "options": "{}",
    "type": "DocType"
   }
  ],

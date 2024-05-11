@@ -419,7 +419,7 @@
    "type": "Link"
   }
  ],
- "modified": "2023-09-14 12:11:03.968048",
+ "modified": "2024-05-05 08:57:38.563140",
  "modified_by": "Administrator",
  "module": "CRM",
  "name": "CRM",
@@ -430,13 +430,14 @@
  "quick_lists": [],
  "restrict_to_domain": "",
  "roles": [],
- "sequence_id": 17.0,
+ "sequence_id": 18.0,
  "shortcuts": [
   {
    "color": "Blue",
    "format": "{} Open",
    "label": "Lead",
    "link_to": "Lead",
+   "options": "{}",
    "stats_filter": "{\"status\":\"Open\"}",
    "type": "DocType"
   },
@@ -445,22 +446,26 @@
    "format": "{} Assigned",
    "label": "Opportunity",
    "link_to": "Opportunity",
+   "options": "{}",
    "stats_filter": "{\"_assign\": [\"like\", '%' + frappe.session.user + '%']}",
    "type": "DocType"
   },
   {
    "label": "Customer",
    "link_to": "Customer",
+   "options": "{}",
    "type": "DocType"
   },
   {
    "label": "Sales Analytics",
    "link_to": "Sales Analytics",
+   "options": "{}",
    "type": "Report"
   },
   {
    "label": "Dashboard",
    "link_to": "CRM",
+   "options": "{}",
    "type": "Dashboard"
   }
  ],

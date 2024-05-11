@@ -763,7 +763,7 @@
    "type": "Link"
   }
  ],
- "modified": "2023-07-04 14:38:14.988756",
+ "modified": "2024-05-05 08:57:37.662570",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Stock",
@@ -787,13 +787,14 @@
  "quick_lists": [],
  "restrict_to_domain": "",
  "roles": [],
- "sequence_id": 7.0,
+ "sequence_id": 10.0,
  "shortcuts": [
   {
    "color": "Green",
    "format": "{}  Available",
    "label": "Item",
    "link_to": "Item",
+   "options": "{}",
    "stats_filter": "{\n    \"disabled\" : 0\n}",
    "type": "DocType"
   },
@@ -801,6 +802,7 @@
    "color": "Grey",
    "doc_view": "List",
    "label": "Learn Inventory Management",
+   "options": "{}",
    "type": "URL",
    "url": "https://frappe.school/courses/inventory-management?utm_source=in_app"
   },
@@ -809,12 +811,14 @@
    "format": "{} Pending",
    "label": "Material Request",
    "link_to": "Material Request",
+   "options": "{}",
    "stats_filter": "{\n    \"company\": [\"like\", '%' + frappe.defaults.get_global_default(\"company\") + '%'],\n    \"status\": \"Pending\"\n}",
    "type": "DocType"
   },
   {
    "label": "Stock Entry",
    "link_to": "Stock Entry",
+   "options": "{}",
    "type": "DocType"
   },
   {
@@ -822,6 +826,7 @@
    "format": "{} To Bill",
    "label": "Purchase Receipt",
    "link_to": "Purchase Receipt",
+   "options": "{}",
    "stats_filter": "{\n    \"company\": [\"like\", '%' + frappe.defaults.get_global_default(\"company\") + '%'],\n    \"status\": \"To Bill\"\n}",
    "type": "DocType"
   },
@@ -830,22 +835,26 @@
    "format": "{} To Bill",
    "label": "Delivery Note",
    "link_to": "Delivery Note",
+   "options": "{}",
    "stats_filter": "{\n    \"company\": [\"like\", '%' + frappe.defaults.get_global_default(\"company\") + '%'],\n    \"status\": \"To Bill\"\n}",
    "type": "DocType"
   },
   {
    "label": "Stock Ledger",
    "link_to": "Stock Ledger",
+   "options": "{}",
    "type": "Report"
   },
   {
    "label": "Stock Balance",
    "link_to": "Stock Balance",
+   "options": "{}",
    "type": "Report"
   },
   {
    "label": "Dashboard",
    "link_to": "Stock",
+   "options": "{}",
    "type": "Dashboard"
   }
  ],

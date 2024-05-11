@@ -38,6 +38,7 @@ class StockLedgerEntry(Document):
 		from frappe.types import DF
 
 		actual_qty: DF.Float
+		arn: DF.Link | None
 		auto_created_serial_and_batch_bundle: DF.Check
 		batch_no: DF.Data | None
 		company: DF.Link | None
@@ -85,6 +86,7 @@ class StockLedgerEntry(Document):
 
 		self.validate_mandatory()
 		self.validate_batch()
+		self.validate_arn()
 		validate_disabled_warehouse(self.warehouse)
 		validate_warehouse_company(self.warehouse, self.company)
 		self.scrub_posting_time()
@@ -230,7 +232,8 @@ class StockLedgerEntry(Document):
 
 		if item_detail.has_serial_no or item_detail.has_batch_no:
 			if not self.serial_and_batch_bundle:
-				self.throw_error_message(f"Serial No / Batch No are mandatory for Item {self.item_code}")
+				if not self.arn:
+					self.throw_error_message(f"Serial No / Batch No are mandatory for Item {self.item_code}")
 
 		if self.serial_and_batch_bundle and not (item_detail.has_serial_no or item_detail.has_batch_no):
 			self.throw_error_message(f"Serial No and Batch No are not allowed for Item {self.item_code}")
@@ -269,6 +272,21 @@ class StockLedgerEntry(Document):
 	def scrub_posting_time(self):
 		if not self.posting_time or self.posting_time == "00:0":
 			self.posting_time = "00:00"
+
+	def validate_arn(self):
+		if self.voucher_type == "Purchase Invoice" and not self.arn:
+			qi_req = frappe.db.get_value("Item", self.item_code, "inspection_required_before_purchase")
+			if qi_req:
+				arn = frappe.db.get_value("Quality Inspection", { "reference_name": self.voucher_no, "item_code": self.item_code }, "arn")
+				if arn:
+					self.arn = arn
+		elif self.voucher_type == "Stock Entry" and not self.arn:
+			# se_type = frappe.db.get_value("Stock Entry", self.voucher_no, "stock_entry_type")
+			# if se_type == "Material Transfer":
+			arn = frappe.db.get_value('Stock Entry Detail', {'parenttype': 'Stock Entry', 'item_code': self.item_code}, 'arn')
+			if arn:
+				self.arn = arn
+
 
 	def validate_batch(self):
 		if self.batch_no and self.voucher_type != "Stock Entry":

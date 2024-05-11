@@ -171,7 +171,7 @@
    "type": "Link"
   }
  ],
- "modified": "2023-05-24 14:47:23.408966",
+ "modified": "2024-05-05 08:57:38.283581",
  "modified_by": "Administrator",
  "module": "Support",
  "name": "Support",
@@ -182,24 +182,27 @@
  "quick_lists": [],
  "restrict_to_domain": "",
  "roles": [],
- "sequence_id": 12.0,
+ "sequence_id": 15.0,
  "shortcuts": [
   {
    "color": "Yellow",
    "format": "{} Assigned",
    "label": "Issue",
    "link_to": "Issue",
+   "options": "{}",
    "stats_filter": "{\n    \"_assign\": [\"like\", '%' + frappe.session.user + '%'],\n    \"status\": \"Open\"\n}",
    "type": "DocType"
   },
   {
    "label": "Maintenance Visit",
    "link_to": "Maintenance Visit",
+   "options": "{}",
    "type": "DocType"
   },
   {
    "label": "Service Level Agreement",
    "link_to": "Service Level Agreement",
+   "options": "{}",
    "type": "DocType"
   }
  ],

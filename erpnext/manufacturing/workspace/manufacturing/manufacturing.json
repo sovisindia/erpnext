@@ -316,7 +316,7 @@
    "type": "Link"
   }
  ],
- "modified": "2024-01-30 21:49:58.577218",
+ "modified": "2024-05-05 08:57:37.988414",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "Manufacturing",
@@ -327,12 +327,13 @@
  "quick_lists": [],
  "restrict_to_domain": "",
  "roles": [],
- "sequence_id": 8.0,
+ "sequence_id": 12.0,
  "shortcuts": [
   {
    "color": "Grey",
    "doc_view": "List",
    "label": "Learn Manufacturing",
+   "options": "{}",
    "type": "URL",
    "url": "https://frappe.school/courses/manufacturing?utm_source=in_app"
   },
@@ -341,6 +342,7 @@
    "doc_view": "List",
    "label": "Plant Floor",
    "link_to": "Plant Floor",
+   "options": "{}",
    "type": "DocType"
   },
   {
@@ -348,6 +350,7 @@
    "doc_view": "List",
    "label": "BOM Creator",
    "link_to": "BOM Creator",
+   "options": "{}",
    "type": "DocType"
   },
   {
@@ -355,6 +358,7 @@
    "doc_view": "List",
    "label": "BOM",
    "link_to": "BOM",
+   "options": "{}",
    "stats_filter": "{\"is_active\":[\"=\",1]}",
    "type": "DocType"
   },
@@ -363,6 +367,7 @@
    "doc_view": "List",
    "label": "Production Plan",
    "link_to": "Production Plan",
+   "options": "{}",
    "stats_filter": "{\"status\":[\"not in\",[\"Closed\",\"Cancelled\",\"Completed\"]]}",
    "type": "DocType"
   },
@@ -371,6 +376,7 @@
    "doc_view": "List",
    "label": "Work Order",
    "link_to": "Work Order",
+   "options": "{}",
    "stats_filter": "{\"status\":[\"not in\",[\"Closed\",\"Cancelled\",\"Completed\"]]}",
    "type": "DocType"
   },
@@ -379,22 +385,26 @@
    "doc_view": "List",
    "label": "Job Card",
    "link_to": "Job Card",
+   "options": "{}",
    "stats_filter": "{\"status\":[\"not in\",[\"Cancelled\",\"Completed\",null]]}",
    "type": "DocType"
   },
   {
    "label": "Forecasting",
    "link_to": "Exponential Smoothing Forecasting",
+   "options": "{}",
    "type": "Report"
   },
   {
    "label": "BOM Stock Report",
    "link_to": "BOM Stock Report",
+   "options": "{}",
    "type": "Report"
   },
   {
    "label": "Production Planning Report",
    "link_to": "Production Planning Report",
+   "options": "{}",
    "type": "Report"
   }
  ],

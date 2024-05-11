@@ -10,6 +10,7 @@
   "barcode",
   "has_item_scanned",
   "item_code",
+  "stock",
   "col_break1",
   "item_name",
   "customer_item_code",
@@ -921,12 +922,22 @@
   {
    "fieldname": "column_break_ytgd",
    "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "stock",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Stock",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-02-25 15:56:44.828634",
+ "modified": "2024-05-06 08:54:59.194111",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice Item",

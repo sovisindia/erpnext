@@ -196,7 +196,7 @@
    "type": "Link"
   }
  ],
- "modified": "2024-01-18 22:11:51.474477",
+ "modified": "2024-05-05 08:57:36.770720",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Receivables",
@@ -207,13 +207,14 @@
  "quick_lists": [],
  "restrict_to_domain": "",
  "roles": [],
- "sequence_id": 4.0,
+ "sequence_id": 5.0,
  "shortcuts": [
   {
    "color": "Grey",
    "doc_view": "List",
    "label": "POS Invoice",
    "link_to": "POS Invoice",
+   "options": "{}",
    "stats_filter": "[]",
    "type": "DocType"
   },
@@ -222,12 +223,14 @@
    "doc_view": "List",
    "label": "Cost Center",
    "link_to": "Cost Center",
+   "options": "{}",
    "type": "DocType"
   },
   {
    "doc_view": "",
    "label": "Sales Invoice",
    "link_to": "Sales Invoice",
+   "options": "{}",
    "stats_filter": "[]",
    "type": "DocType"
   },
@@ -235,18 +238,21 @@
    "doc_view": "",
    "label": "Journal Entry",
    "link_to": "Journal Entry",
+   "options": "{}",
    "type": "DocType"
   },
   {
    "doc_view": "",
    "label": "Payment Entry",
    "link_to": "Payment Entry",
+   "options": "{}",
    "type": "DocType"
   },
   {
    "doc_view": "",
    "label": "Accounts Receivable",
    "link_to": "Accounts Receivable",
+   "options": "{}",
    "type": "Report"
   }
  ],

@@ -80,10 +80,10 @@ frappe.query_reports["Stock Ledger"] = {
 			fieldtype: "Data",
 		},
 		{
-			fieldname: "project",
-			label: __("Project"),
+			fieldname: "arn",
+			label: __("A.R No."),
 			fieldtype: "Link",
-			options: "Project",
+			options: "ARN",
 		},
 		{
 			fieldname: "include_uom",

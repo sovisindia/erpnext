@@ -192,7 +192,7 @@
    "type": "Link"
   }
  ],
- "modified": "2023-07-04 14:39:08.935853",
+ "modified": "2024-05-05 08:57:38.193070",
  "modified_by": "Administrator",
  "module": "Projects",
  "name": "Projects",
@@ -203,12 +203,13 @@
  "quick_lists": [],
  "restrict_to_domain": "",
  "roles": [],
- "sequence_id": 11.0,
+ "sequence_id": 14.0,
  "shortcuts": [
   {
    "color": "Grey",
    "doc_view": "List",
    "label": "Learn Project Management",
+   "options": "{}",
    "type": "URL",
    "url": "https://frappe.school/courses/project-management?utm_source=in_app"
   },
@@ -217,6 +218,7 @@
    "format": "{} Assigned",
    "label": "Task",
    "link_to": "Task",
+   "options": "{}",
    "stats_filter": "{\n    \"_assign\": [\"like\", '%' + frappe.session.user + '%'],\n    \"status\": \"Open\"\n}",
    "type": "DocType"
   },
@@ -225,22 +227,26 @@
    "format": "{} Open",
    "label": "Project",
    "link_to": "Project",
+   "options": "{}",
    "stats_filter": "{\n    \"status\": \"Open\"\n}",
    "type": "DocType"
   },
   {
    "label": "Timesheet",
    "link_to": "Timesheet",
+   "options": "{}",
    "type": "DocType"
   },
   {
    "label": "Project Billing Summary",
    "link_to": "Project Billing Summary",
+   "options": "{}",
    "type": "Report"
   },
   {
    "label": "Dashboard",
    "link_to": "Project",
+   "options": "{}",
    "type": "Dashboard"
   }
  ],

@@ -239,6 +239,25 @@ frappe.ui.form.on("Stock Entry", {
 		}
 
 		if (frm.doc.items) {
+
+			const finished_item = frm.doc.items.find((i) => i.is_finished_item)
+
+			if (
+				['Material Transfer for Manufacture', 'Manufacture'].includes(frm.doc.purpose)
+				&& frm.doc.work_order
+				&& finished_item
+				&& !finished_item.batch_no
+			){
+				// Append Production Item's Batch to Finished Item
+				frappe.db.get_value("Work Order", frm.doc.work_order, "batch").then(({ message }) => {
+					if (message.batch) {
+						finished_item.batch_no = message.batch
+
+						frm.refresh_field('items')
+					}
+				})
+			}
+			
 			const has_alternative = frm.doc.items.find((i) => i.allow_alternative_item === 1);
 
 			if (frm.doc.docstatus == 0 && has_alternative) {
@@ -824,6 +843,10 @@ frappe.ui.form.on("Stock Entry", {
 });
 
 frappe.ui.form.on("Stock Entry Detail", {
+	refresh(frm, cdt, cdn) {
+		
+	},
+
 	qty(frm, cdt, cdn) {
 		frm.events.set_basic_rate(frm, cdt, cdn);
 	},
