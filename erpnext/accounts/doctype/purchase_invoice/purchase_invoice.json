@@ -19,6 +19,7 @@
   "set_posting_time",
   "bill_no",
   "update_stock",
+  "set_warehouse",
   "column_break1",
   "due_date",
   "bill_date",
@@ -47,7 +48,6 @@
   "sec_warehouse",
   "scan_barcode",
   "col_break_warehouse",
-  "set_warehouse",
   "set_from_warehouse",
   "is_subcontracted",
   "rejected_warehouse",
@@ -1644,7 +1644,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-04-25 12:45:52.104770",
+ "modified": "2024-05-13 14:54:35.268381",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Purchase Invoice",
