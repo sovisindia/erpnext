@@ -28,6 +28,8 @@
   "conversion_rate",
   "materials_section",
   "items",
+  "section_pm",
+  "packing_items",
   "section_break_21",
   "operations_section_section",
   "with_operations",
@@ -630,6 +632,19 @@
   {
    "fieldname": "column_break_oxbz",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_pm",
+   "fieldtype": "Section Break",
+   "label": "Packing Materials"
+  },
+  {
+   "fieldname": "packing_items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "oldfieldname": "bom_materials",
+   "oldfieldtype": "Table",
+   "options": "BOM Item"
   }
  ],
  "icon": "fa fa-sitemap",
@@ -637,7 +652,7 @@
  "image_field": "image",
  "is_submittable": 1,
  "links": [],
- "modified": "2024-04-02 16:22:47.518411",
+ "modified": "2024-05-15 12:05:19.750424",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "BOM",
