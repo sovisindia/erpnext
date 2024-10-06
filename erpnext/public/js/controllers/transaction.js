@@ -277,7 +277,7 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 
 			this.frm.trigger('set_default_internal_warehouse');
 
-			return frappe.run_serially([
+			frappe.run_serially([
 				() => set_value('currency', currency),
 				() => set_value('price_list_currency', currency),
 				() => set_value('status', 'Draft'),
