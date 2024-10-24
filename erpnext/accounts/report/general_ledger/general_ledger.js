@@ -77,7 +77,7 @@ frappe.query_reports["General Ledger"] = {
 				if (!frappe.query_report.filters) return;
 
 				let party_type = frappe.query_report.get_filter_value("party_type");
-				if (!party_type) return;
+				if (!party_type) return [...new Set(frappe.query_report.data.filter(c => c.party).map(c => c.party))].map(c => ({ value: c, description: c }));
 
 				return frappe.db.get_link_options(party_type, txt);
 			},
@@ -88,7 +88,7 @@ frappe.query_reports["General Ledger"] = {
 				if (!party_type || parties.length === 0 || parties.length > 1) {
 					frappe.query_report.set_filter_value("party_name", "");
 					frappe.query_report.set_filter_value("tax_id", "");
-					return;
+					return frappe.query_report.refresh();
 				} else {
 					var party = parties[0];
 					var fieldname = erpnext.utils.get_party_name(party_type) || "name";
