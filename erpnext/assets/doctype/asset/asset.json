@@ -154,6 +154,7 @@
   {
    "allow_on_submit": 1,
    "fetch_from": "item_code.image",
+   "fetch_if_empty": 1,
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "hidden": 1,
@@ -512,6 +513,7 @@
    "fieldname": "total_asset_cost",
    "fieldtype": "Currency",
    "label": "Total Asset Cost",
+   "no_copy": 1,
    "options": "Company:company:default_currency",
    "read_only": 1
   },
@@ -520,6 +522,7 @@
    "fieldname": "additional_asset_cost",
    "fieldtype": "Currency",
    "label": "Additional Asset Cost",
+   "no_copy": 1,
    "options": "Company:company:default_currency",
    "read_only": 1
   },
@@ -593,7 +596,7 @@
    "link_fieldname": "target_asset"
   }
  ],
- "modified": "2025-04-15 16:33:17.189524",
+ "modified": "2025-05-20 00:44:06.229177",
  "modified_by": "Administrator",
  "module": "Assets",
  "name": "Asset",

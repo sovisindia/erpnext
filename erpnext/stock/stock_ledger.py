@@ -882,6 +882,12 @@ class update_entries_after:
 					self.wh_data.stock_value = flt(self.wh_data.qty_after_transaction) * flt(
 						self.wh_data.valuation_rate
 					)
+
+					if sle.actual_qty < 0 and self.wh_data.qty_after_transaction != 0:
+						self.wh_data.valuation_rate = flt(
+							self.wh_data.stock_value, self.currency_precision
+						) / flt(self.wh_data.qty_after_transaction, self.flt_precision)
+
 				else:
 					self.update_queue_values(sle)
 
@@ -894,7 +900,7 @@ class update_entries_after:
 		self.wh_data.prev_stock_value = self.wh_data.stock_value
 
 		# update current sle
-		sle.qty_after_transaction = self.wh_data.qty_after_transaction
+		sle.qty_after_transaction = flt(self.wh_data.qty_after_transaction, self.flt_precision)
 		sle.valuation_rate = self.wh_data.valuation_rate
 		sle.stock_value = self.wh_data.stock_value
 		sle.stock_queue = json.dumps(self.wh_data.stock_queue)
@@ -962,7 +968,7 @@ class update_entries_after:
 
 	def reset_actual_qty_for_stock_reco(self, sle):
 		doc = frappe.get_cached_doc("Stock Reconciliation", sle.voucher_no)
-		doc.recalculate_current_qty(sle.voucher_detail_no)
+		doc.recalculate_current_qty(sle.voucher_detail_no, sle.creation, sle.actual_qty > 0)
 
 		if sle.actual_qty < 0:
 			sle.actual_qty = (
@@ -1812,7 +1818,7 @@ def get_valuation_rate(
 	# Get valuation rate from last sle for the same item and warehouse
 	if last_valuation_rate := frappe.db.sql(  # nosemgrep
 		"""select valuation_rate
-		from `tabStock Ledger Entry` force index (item_warehouse)
+		from `tabStock Ledger Entry`
 		where
 			item_code = %s
 			AND warehouse = %s
@@ -1956,7 +1962,6 @@ def get_next_stock_reco(kwargs):
 			sle.actual_qty,
 			sle.has_batch_no,
 		)
-		.force_index("item_warehouse")
 		.where(
 			(sle.item_code == kwargs.get("item_code"))
 			& (sle.warehouse == kwargs.get("warehouse"))

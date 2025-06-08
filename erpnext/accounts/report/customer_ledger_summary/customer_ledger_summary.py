@@ -8,6 +8,7 @@ from frappe.query_builder import Criterion, Tuple
 from frappe.query_builder.functions import IfNull
 from frappe.utils import getdate, nowdate
 from frappe.utils.nestedset import get_descendants_of
+from pypika.terms import LiteralValue
 
 from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
 	get_accounting_dimensions,
@@ -15,7 +16,7 @@ from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
 )
 
 TREE_DOCTYPES = frozenset(
-	["Customer Group", "Terrirtory", "Supplier Group", "Sales Partner", "Sales Person", "Cost Center"]
+	["Customer Group", "Territory", "Supplier Group", "Sales Partner", "Sales Person", "Cost Center"]
 )
 
 
@@ -77,13 +78,12 @@ class PartyLedgerSummaryReport:
 
 		from frappe.desk.reportview import build_match_conditions
 
-		query, params = query.walk()
 		match_conditions = build_match_conditions(party_type)
 
 		if match_conditions:
-			query += "and" + match_conditions
+			query = query.where(LiteralValue(match_conditions))
 
-		party_details = frappe.db.sql(query, params, as_dict=True)
+		party_details = query.run(as_dict=True)
 
 		for row in party_details:
 			self.parties.append(row.party)
@@ -100,7 +100,7 @@ class PartyLedgerSummaryReport:
 			conditions.append(doctype.territory.isin(self.filters.territory))
 
 		if self.filters.get(group_field):
-			conditions.append(doctype.get(group_field).isin(self.filters.get(group_field)))
+			conditions.append(doctype[group_field].isin(self.filters.get(group_field)))
 
 		if self.filters.payment_terms_template:
 			conditions.append(doctype.payment_terms == self.filters.payment_terms_template)
@@ -144,10 +144,10 @@ class PartyLedgerSummaryReport:
 		if self.party_naming_by == "Naming Series":
 			columns.append(
 				{
-					"label": _(self.filters.party_type + "Name"),
+					"label": _(self.filters.party_type + " Name"),
 					"fieldtype": "Data",
 					"fieldname": "party_name",
-					"width": 110,
+					"width": 150,
 				}
 			)
 
@@ -252,12 +252,13 @@ class PartyLedgerSummaryReport:
 		self.party_data = frappe._dict({})
 		for gle in self.gl_entries:
 			party_details = self.party_details.get(gle.party)
+			party_name = party_details.get(f"{scrub(self.filters.party_type)}_name", "")
 			self.party_data.setdefault(
 				gle.party,
 				frappe._dict(
 					{
 						**party_details,
-						"party_name": gle.party,
+						"party_name": party_name,
 						"opening_balance": 0,
 						"invoiced_amount": 0,
 						"paid_amount": 0,
@@ -404,7 +405,9 @@ class PartyLedgerSummaryReport:
 		gl = qb.DocType("GL Entry")
 		query = (
 			qb.from_(gl)
-			.select(gl.voucher_type, gl.voucher_no)
+			.select(
+				gl.posting_date, gl.account, gl.party, gl.voucher_type, gl.voucher_no, gl.debit, gl.credit
+			)
 			.where(
 				(gl.docstatus < 2)
 				& (gl.is_cancelled == 0)
@@ -455,9 +458,16 @@ class PartyLedgerSummaryReport:
 
 
 def get_children(doctype, value):
-	children = get_descendants_of(doctype, value)
+	if not isinstance(value, list):
+		value = [d.strip() for d in value.strip().split(",") if d]
 
-	return [value, *children]
+	all_children = []
+
+	for d in value:
+		all_children += get_descendants_of(doctype, value)
+		all_children.append(d)
+
+	return list(set(all_children))
 
 
 def execute(filters=None):

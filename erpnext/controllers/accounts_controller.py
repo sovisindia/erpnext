@@ -649,6 +649,9 @@ class AccountsController(TransactionBase):
 				self.base_paid_amount = flt(
 					self.paid_amount * self.conversion_rate, self.precision("base_paid_amount")
 				)
+			else:
+				self.paid_amount = 0
+				self.base_paid_amount = 0
 
 	def set_missing_values(self, for_validate=False):
 		if frappe.flags.in_test:
@@ -779,17 +782,10 @@ class AccountsController(TransactionBase):
 			if not self.due_date:
 				frappe.throw(_("Due Date is mandatory"))
 
-			validate_due_date(
-				posting_date,
-				self.due_date,
-				self.payment_terms_template,
-			)
+			validate_due_date(posting_date, self.due_date, None, self.payment_terms_template, self.doctype)
 		elif self.doctype == "Purchase Invoice":
 			validate_due_date(
-				posting_date,
-				self.due_date,
-				self.bill_date,
-				self.payment_terms_template,
+				posting_date, self.due_date, self.bill_date, self.payment_terms_template, self.doctype
 			)
 
 	def set_price_list_currency(self, buying_or_selling):
@@ -1259,13 +1255,18 @@ class AccountsController(TransactionBase):
 			)
 
 	def validate_qty_is_not_zero(self):
-		if self.doctype == "Purchase Receipt":
+		if self.flags.allow_zero_qty:
 			return
 
 		for item in self.items:
+			if self.doctype == "Purchase Receipt" and item.rejected_qty:
+				continue
+
 			if not flt(item.qty):
 				frappe.throw(
-					msg=_("Row #{0}: Item quantity cannot be zero").format(item.idx),
+					msg=_("Row #{0}: Quantity for Item {1} cannot be zero.").format(
+						item.idx, frappe.bold(item.item_code)
+					),
 					title=_("Invalid Quantity"),
 					exc=InvalidQtyError,
 				)
@@ -1841,8 +1842,11 @@ class AccountsController(TransactionBase):
 			and self.get("discount_amount")
 			and self.get("additional_discount_account")
 		):
-			amount = item.amount
-			base_amount = item.base_amount
+			amount += item.distributed_discount_amount
+			base_amount += flt(
+				item.distributed_discount_amount * self.get("conversion_rate"),
+				item.precision("distributed_discount_amount"),
+			)
 
 		return amount, base_amount
 
@@ -2395,13 +2399,12 @@ class AccountsController(TransactionBase):
 						base_grand_total * flt(d.invoice_portion) / 100, d.precision("base_payment_amount")
 					)
 					d.outstanding = d.payment_amount
-					d.base_outstanding = flt(
-						d.payment_amount * self.get("conversion_rate"), d.precision("base_outstanding")
-					)
+					d.base_outstanding = d.base_payment_amount
 				elif not d.invoice_portion:
 					d.base_payment_amount = flt(
 						d.payment_amount * self.get("conversion_rate"), d.precision("base_payment_amount")
 					)
+					d.base_outstanding = d.base_payment_amount
 		else:
 			self.fetch_payment_terms_from_order(
 				po_or_so, doctype, grand_total, base_grand_total, automatically_fetch_payment_terms
@@ -3594,7 +3597,7 @@ def update_child_qty_rate(parent_doctype, trans_items, parent_doctype_name, chil
 	def validate_quantity(child_item, new_data):
 		if not flt(new_data.get("qty")):
 			frappe.throw(
-				_("Row # {0}: Quantity for Item {1} cannot be zero").format(
+				_("Row #{0}: Quantity for Item {1} cannot be zero.").format(
 					new_data.get("idx"), frappe.bold(new_data.get("item_code"))
 				),
 				title=_("Invalid Qty"),
@@ -3735,9 +3738,9 @@ def update_child_qty_rate(parent_doctype, trans_items, parent_doctype_name, chil
 		)
 		if amount_below_billed_amt and row_rate > 0.0:
 			frappe.throw(
-				_("Row #{0}: Cannot set Rate if amount is greater than billed amount for Item {1}.").format(
-					child_item.idx, child_item.item_code
-				)
+				_(
+					"Row #{0}: Cannot set Rate if the billed amount is greater than the amount for Item {1}."
+				).format(child_item.idx, child_item.item_code)
 			)
 		else:
 			child_item.rate = row_rate

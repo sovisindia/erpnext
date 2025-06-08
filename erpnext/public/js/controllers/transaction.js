@@ -42,6 +42,29 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 			}
 			item.base_rate_with_margin = item.rate_with_margin * flt(frm.doc.conversion_rate);
 
+			if (item.item_code && item.rate) {
+				frappe.call({
+					method: "frappe.client.get_value",
+					args: {
+						doctype: "Item Tax",
+						parent: "Item",
+						filters: {
+							parent: item.item_code,
+							minimum_net_rate: ["<=", item.rate],
+							maximum_net_rate: [">=", item.rate]
+						},
+						fieldname: "item_tax_template"
+					},
+					callback: function(r) {
+						const tax_rule = r.message;
+
+						let matched_template = tax_rule ? tax_rule.item_tax_template : null;
+
+						frappe.model.set_value(cdt, cdn, 'item_tax_template', matched_template);
+					}
+				});
+			}
+
 			cur_frm.cscript.set_gross_profit(item);
 			cur_frm.cscript.calculate_taxes_and_totals();
 			cur_frm.cscript.calculate_stock_uom_rate(frm, cdt, cdn);
@@ -330,7 +353,10 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		}
 
 		const me = this;
-		if (!this.frm.is_new() && this.frm.doc.docstatus === 0 && frappe.model.can_create("Quality Inspection") && show_qc_button) {
+		if (!this.frm.is_new()
+			&& (this.frm.doc.docstatus === 0 || this.frm.doc.__onload?.allow_to_make_qc_after_submission)
+			&& frappe.model.can_create("Quality Inspection")
+			&& show_qc_button) {
 			this.frm.add_custom_button(__("Quality Inspection(s)"), () => {
 				me.make_quality_inspection();
 			}, __("Create"));
@@ -792,6 +818,10 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 			return;
 		}
 
+		if (item.serial_no) {
+			item.use_serial_batch_fields = 1
+		}
+
 		if (item && item.serial_no) {
 			if (!item.item_code) {
 				this.frm.trigger("item_code", cdt, cdn);
@@ -840,8 +870,8 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		frappe.model.set_value(item.doctype, item.name, "stock_qty", valid_serial_nos.length);
 	}
 
-	validate() {
-		this.calculate_taxes_and_totals(false);
+	async validate() {
+		await this.calculate_taxes_and_totals(false);
 	}
 
 	update_stock() {
@@ -1355,13 +1385,6 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 		}
 	}
 
-	batch_no(doc, cdt, cdn) {
-		let item = frappe.get_doc(cdt, cdn);
-		if (!this.is_a_mapped_document(item)) {
-			this.apply_price_list(item, true);
-		}
-	}
-
 	toggle_conversion_factor(item) {
 		// toggle read only property for conversion factor field if the uom and stock uom are same
 		if(this.frm.get_field('items').grid.fields_map.conversion_factor) {
@@ -1587,7 +1610,12 @@ erpnext.TransactionController = class TransactionController extends erpnext.taxe
 
 	batch_no(frm, cdt, cdn) {
 		let row = locals[cdt][cdn];
-		if (row.use_serial_batch_fields && row.batch_no) {
+
+		if (row.batch_no) {
+			row.use_serial_batch_fields = 1
+		}
+
+		if (row.batch_no) {
 			var params = this._get_args(row);
 			params.batch_no = row.batch_no;
 			params.uom = row.uom;
@@ -2770,4 +2798,20 @@ erpnext.apply_putaway_rule = (frm, purpose=null) => {
 			}
 		}
 	});
+};
+
+erpnext.set_unit_price_items_note = (frm) => {
+	if (frm.doc.has_unit_price_items && !frm.is_new()) {
+		// Remove existing note
+		const $note = $(frm.layout.wrapper.find(".unit-price-items-note"));
+		if ($note.length) { $note.parent().remove(); }
+
+		frm.layout.show_message(
+			`<div class="unit-price-items-note">
+				${__("The {0} contains Unit Price Items.", [__(frm.doc.doctype)])}
+			</div>`,
+			"yellow",
+			true
+		);
+	}
 };
