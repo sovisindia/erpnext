@@ -883,7 +883,10 @@ class update_entries_after:
 						self.wh_data.valuation_rate
 					)
 
-					if sle.actual_qty < 0 and self.wh_data.qty_after_transaction != 0:
+					if (
+						sle.actual_qty < 0
+						and flt(self.wh_data.qty_after_transaction, self.flt_precision) != 0
+					):
 						self.wh_data.valuation_rate = flt(
 							self.wh_data.stock_value, self.currency_precision
 						) / flt(self.wh_data.qty_after_transaction, self.flt_precision)
@@ -908,8 +911,11 @@ class update_entries_after:
 		if not sle.is_adjustment_entry:
 			sle.stock_value_difference = stock_value_difference
 		elif sle.is_adjustment_entry and not self.args.get("sle_id"):
-			sle.stock_value_difference = get_stock_value_difference(
-				sle.item_code, sle.warehouse, sle.posting_date, sle.posting_time, sle.voucher_no
+			sle.stock_value_difference = (
+				get_stock_value_difference(
+					sle.item_code, sle.warehouse, sle.posting_date, sle.posting_time, sle.voucher_no
+				)
+				* -1
 			)
 
 		sle.doctype = "Stock Ledger Entry"
@@ -1248,12 +1254,19 @@ class update_entries_after:
 
 	def update_rate_on_purchase_receipt(self, sle, outgoing_rate):
 		if frappe.db.exists(sle.voucher_type + " Item", sle.voucher_detail_no):
-			if sle.voucher_type in ["Purchase Receipt", "Purchase Invoice"] and frappe.get_cached_value(
-				sle.voucher_type, sle.voucher_no, "is_internal_supplier"
-			):
-				frappe.db.set_value(
-					f"{sle.voucher_type} Item", sle.voucher_detail_no, "valuation_rate", sle.outgoing_rate
+			if sle.voucher_type in ["Purchase Receipt", "Purchase Invoice"]:
+				details = frappe.get_cached_value(
+					sle.voucher_type,
+					sle.voucher_no,
+					["is_internal_supplier", "is_return", "return_against"],
+					as_dict=True,
 				)
+				if details.is_internal_supplier or (details.is_return and not details.return_against):
+					rate = outgoing_rate if details.is_return else sle.outgoing_rate
+
+					frappe.db.set_value(
+						f"{sle.voucher_type} Item", sle.voucher_detail_no, "valuation_rate", rate
+					)
 		else:
 			frappe.db.set_value(
 				"Purchase Receipt Item Supplied", sle.voucher_detail_no, "rate", outgoing_rate
@@ -1920,6 +1933,9 @@ def get_stock_reco_qty_shift(args):
 	stock_reco_qty_shift = 0
 	if args.get("is_cancelled"):
 		if args.get("previous_qty_after_transaction"):
+			if args.get("serial_and_batch_bundle"):
+				return args.get("previous_qty_after_transaction")
+
 			# get qty (balance) that was set at submission
 			last_balance = args.get("previous_qty_after_transaction")
 			stock_reco_qty_shift = flt(args.qty_after_transaction) - flt(last_balance)

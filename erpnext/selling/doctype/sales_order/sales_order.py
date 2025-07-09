@@ -1630,6 +1630,11 @@ def make_raw_material_request(items, company, sales_order, project=None):
 
 	items.update({"company": company, "sales_order": sales_order})
 
+	item_wh = {}
+	for item in items.get("items"):
+		if item.get("warehouse"):
+			item_wh[item.get("item_code")] = item.get("warehouse")
+
 	raw_materials = get_items_for_material_requests(items)
 	if not raw_materials:
 		frappe.msgprint(_("Material Request not created, as quantity for Raw Materials already available."))
@@ -1654,7 +1659,7 @@ def make_raw_material_request(items, company, sales_order, project=None):
 				"item_code": item.get("item_code"),
 				"qty": item.get("quantity"),
 				"schedule_date": schedule_date,
-				"warehouse": item.get("warehouse"),
+				"warehouse": item_wh.get(item.get("main_bom_item")) or item.get("warehouse"),
 				"sales_order": sales_order,
 				"project": project,
 			},
@@ -1736,8 +1741,8 @@ def create_pick_list(source_name, target_doc=None):
 				"doctype": "Pick List Item",
 				"field_map": {
 					"parent": "sales_order",
-					"name": "sales_order_item",
-					"parent_detail_docname": "product_bundle_item",
+					"parent_detail_docname": "sales_order_item",
+					"name": "product_bundle_item",
 				},
 				"field_no_map": ["picked_qty"],
 				"postprocess": update_packed_item_qty,
