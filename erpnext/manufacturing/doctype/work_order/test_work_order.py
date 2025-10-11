@@ -2788,56 +2788,150 @@ class TestWorkOrder(FrappeTestCase):
 			fg_warehouse="_Test Warehouse 2 - _TC",
 		)
 
-		# Initial check
-		self.assertEqual(wo.operations[0].operation, "Test Operation A")
-		self.assertEqual(wo.operations[1].operation, "Test Operation B")
-		self.assertEqual(wo.operations[2].operation, "Test Operation C")
-		self.assertEqual(wo.operations[3].operation, "Test Operation D")
-
 		wo = frappe.copy_doc(wo)
-		wo.operations[3].sequence_id = 2
+		wo.operations[3].sequence_id = None
+
+		# Test 1 : If any one operation does not have sequence ID then error will be thrown
+		self.assertRaises(frappe.ValidationError, wo.submit)
+
+		for op in wo.operations:
+			op.sequence_id = None
 		wo.submit()
 
-		# Test 2 : Sort line items in child table based on sequence ID
-		self.assertEqual(wo.operations[0].operation, "Test Operation A")
-		self.assertEqual(wo.operations[1].operation, "Test Operation B")
-		self.assertEqual(wo.operations[2].operation, "Test Operation D")
-		self.assertEqual(wo.operations[3].operation, "Test Operation C")
+		# Test 2 : If none of the operations have sequence ID then they will be sequenced as per their idx
+		for op in wo.operations:
+			self.assertEqual(op.sequence_id, op.idx)
 
 		wo = frappe.copy_doc(wo)
-		wo.operations[3].sequence_id = 1
-		wo.submit()
+		wo.operations[0].sequence_id = 2
 
-		self.assertEqual(wo.operations[0].operation, "Test Operation A")
-		self.assertEqual(wo.operations[1].operation, "Test Operation C")
-		self.assertEqual(wo.operations[2].operation, "Test Operation B")
-		self.assertEqual(wo.operations[3].operation, "Test Operation D")
+		# Test 3 : Sequence IDs should not miss the correct sequence of numbers
+		self.assertRaises(frappe.ValidationError, wo.submit)
 
-		wo = frappe.copy_doc(wo)
-		wo.operations[0].sequence_id = 3
-		wo.submit()
+		wo.operations[1].sequence_id = 1
 
-		self.assertEqual(wo.operations[0].operation, "Test Operation C")
-		self.assertEqual(wo.operations[1].operation, "Test Operation B")
-		self.assertEqual(wo.operations[2].operation, "Test Operation D")
-		self.assertEqual(wo.operations[3].operation, "Test Operation A")
-
-		wo = frappe.copy_doc(wo)
-		wo.operations[1].sequence_id = 0
-
-		# Test 3 - Error should be thrown if any one operation does not have sequence id but others do
+		# Test 4 : Sequence IDs should be in the correct ascending order
 		self.assertRaises(frappe.ValidationError, wo.submit)
 
 		workstation = frappe.get_doc("Workstation", "Test Workstation A")
 		workstation.production_capacity = 4
 		workstation.save()
-
 		wo = frappe.copy_doc(wo)
+		wo.operations[0].sequence_id = 1
 		wo.operations[1].sequence_id = 2
+		wo.operations[2].sequence_id = 2
+		wo.operations[3].sequence_id = 3
 		wo.submit()
 
-		# Test 4 - If Sequence ID is same then planned start time for both operations should be same
-		self.assertEqual(wo.operations[1].planned_start_time, wo.operations[2].planned_start_time)
+		# Test 5 : If two operations have the same sequence ID then the next operation will start 10 mins after the longest previous operation ends
+		self.assertEqual(
+			wo.operations[3].planned_start_time, add_to_date(wo.operations[1].planned_end_time, minutes=10)
+		)
+
+	def test_req_qty_clamping_in_manufacture_entry(self):
+		from erpnext.stock.doctype.stock_entry.test_stock_entry import (
+			make_stock_entry as make_stock_entry_test_record,
+		)
+
+		fg_item = "Test Unconsumed RM FG Item"
+		rm_item_1 = "Test Unconsumed RM Item 1"
+		rm_item_2 = "Test Unconsumed RM Item 2"
+
+		source_warehouse = "_Test Warehouse - _TC"
+		wip_warehouse = "Stores - _TC"
+		fg_warehouse = create_warehouse("_Test Finished Goods Warehouse", company="_Test Company")
+
+		make_item(fg_item, {"is_stock_item": 1})
+		make_item(rm_item_1, {"is_stock_item": 1})
+		make_item(rm_item_2, {"is_stock_item": 1})
+
+		# create a BOM: 1 FG = 1 RM1 + 1 RM2
+		bom = make_bom(
+			item=fg_item,
+			source_warehouse=source_warehouse,
+			raw_materials=[rm_item_1, rm_item_2],
+			operating_cost_per_bom_quantity=1,
+			do_not_submit=True,
+		)
+
+		for row in bom.exploded_items:
+			make_stock_entry_test_record(
+				item_code=row.item_code,
+				target=source_warehouse,
+				qty=100,
+				basic_rate=100,
+			)
+
+		wo = make_wo_order_test_record(
+			item=fg_item,
+			qty=50,
+			source_warehouse=source_warehouse,
+			wip_warehouse=wip_warehouse,
+		)
+		wo.submit()
+
+		# first partial transfer & manufacture (6 units)
+		se_transfer_1 = frappe.get_doc(
+			make_stock_entry(wo.name, "Material Transfer for Manufacture", 6, wip_warehouse)
+		)
+		se_transfer_1.insert()
+		se_transfer_1.submit()
+
+		stock_entry_1 = frappe.get_doc(make_stock_entry(wo.name, "Manufacture", 6, fg_warehouse))
+
+		# remove rm_2 from the items to simulate unconsumed RM scenario
+		stock_entry_1.items = [row for row in stock_entry_1.items if row.item_code != rm_item_2]
+		stock_entry_1.save()
+		stock_entry_1.submit()
+
+		wo.reload()
+
+		se_transfer_2 = frappe.get_doc(
+			make_stock_entry(wo.name, "Material Transfer for Manufacture", 20, wip_warehouse)
+		)
+		se_transfer_2.insert()
+		se_transfer_2.submit()
+
+		stock_entry_2 = frappe.get_doc(make_stock_entry(wo.name, "Manufacture", 20, fg_warehouse))
+
+		# validate rm_item_2 quantity is clamped correctly (per-unit BOM = 1 → max 20)
+		for row in stock_entry_2.items:
+			if row.item_code == rm_item_2:
+				self.assertLessEqual(row.qty, 20)
+				self.assertGreaterEqual(row.qty, 0)
+
+	def test_overproduction_allowed_qty(self):
+		"""Test overproduction allowed qty in work order"""
+		allow_overproduction("overproduction_percentage_for_work_order", 50)
+
+		wo_order = make_wo_order_test_record(planned_start_date=now(), qty=10)
+
+		test_stock_entry.make_stock_entry(
+			item_code="_Test Item", target="Stores - _TC", qty=100, basic_rate=100
+		)
+		test_stock_entry.make_stock_entry(
+			item_code="_Test Item Home Desktop 100",
+			target="_Test Warehouse - _TC",
+			qty=100,
+			basic_rate=1000.0,
+		)
+
+		mt_stock_entry = frappe.get_doc(
+			make_stock_entry(wo_order.name, "Material Transfer for Manufacture", 10)
+		)
+		mt_stock_entry.submit()
+
+		fg_stock_entry = frappe.get_doc(make_stock_entry(wo_order.name, "Manufacture", 10))
+		fg_stock_entry.items[2].qty = 15
+		fg_stock_entry.fg_completed_qty = 15
+		fg_stock_entry.submit()
+
+		wo_order.reload()
+
+		self.assertEqual(wo_order.produced_qty, 15)
+		self.assertEqual(wo_order.status, "Completed")
+
+		allow_overproduction("overproduction_percentage_for_work_order", 0)
 
 
 def make_stock_in_entries_and_get_batches(rm_item, source_warehouse, wip_warehouse):

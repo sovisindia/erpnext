@@ -231,6 +231,11 @@ class AccountsController(TransactionBase):
 
 		self.validate_date_with_fiscal_year()
 		self.validate_party_accounts()
+		if self.doctype in ["Sales Invoice", "Purchase Invoice"]:
+			if self.is_return:
+				self.validate_qty()
+			else:
+				self.validate_deferred_start_and_end_date()
 
 		self.validate_inter_company_reference()
 		# validate inter  company transaction rate
@@ -281,11 +286,6 @@ class AccountsController(TransactionBase):
 				self.set_advances()
 
 			self.set_advance_gain_or_loss()
-
-			if self.is_return:
-				self.validate_qty()
-			else:
-				self.validate_deferred_start_and_end_date()
 
 			self.validate_deferred_income_expense_account()
 			self.set_inter_company_account()
@@ -397,7 +397,6 @@ class AccountsController(TransactionBase):
 	def on_trash(self):
 		from erpnext.accounts.utils import delete_exchange_gain_loss_journal
 
-		self._remove_advance_payment_ledger_entries()
 		self._remove_references_in_repost_doctypes()
 		self._remove_references_in_unreconcile()
 		self.remove_serial_and_batch_bundle()
@@ -425,6 +424,8 @@ class AccountsController(TransactionBase):
 			frappe.qb.from_(sle).delete().where(
 				(sle.voucher_type == self.doctype) & (sle.voucher_no == self.name)
 			).run()
+
+			self._remove_advance_payment_ledger_entries()
 
 	def remove_serial_and_batch_bundle(self):
 		bundles = frappe.get_all(
@@ -1946,6 +1947,15 @@ class AccountsController(TransactionBase):
 			and self.get("discount_amount")
 			and self.get("additional_discount_account")
 		):
+			# cases where distributed_discount_amount is not patched
+			if not hasattr(self, "__has_distributed_discount_set"):
+				self.__has_distributed_discount_set = any(
+					i.distributed_discount_amount for i in self.get("items")
+				)
+
+			if not self.__has_distributed_discount_set:
+				return item.amount, item.base_amount
+
 			amount += item.distributed_discount_amount
 			base_amount += flt(
 				item.distributed_discount_amount * self.get("conversion_rate"),
@@ -2224,54 +2234,30 @@ class AccountsController(TransactionBase):
 
 	def calculate_total_advance_from_ledger(self):
 		adv = frappe.qb.DocType("Advance Payment Ledger Entry")
-		advance = (
-			frappe.qb.from_(adv)
-			.select(adv.currency.as_("account_currency"), Abs(Sum(adv.amount)).as_("amount"))
-			.where(
-				(adv.against_voucher_type == self.doctype)
-				& (adv.against_voucher_no == self.name)
-				& (adv.company == self.company)
-			)
+		return (
+			qb.from_(adv)
+			.select(Abs(Sum(adv.amount)).as_("amount"), adv.currency.as_("account_currency"))
+			.where(adv.company == self.company)
+			.where(adv.delinked == 0)
+			.where(adv.against_voucher_type == self.doctype)
+			.where(adv.against_voucher_no == self.name)
 			.run(as_dict=True)
 		)
-		return advance
 
 	def set_total_advance_paid(self):
 		advance = self.calculate_total_advance_from_ledger()
-		advance_paid, order_total = None, None
+		advance_paid = 0
 
 		if advance:
 			advance = advance[0]
 
 			advance_paid = flt(advance.amount, self.precision("advance_paid"))
-			formatted_advance_paid = fmt_money(
-				advance_paid, precision=self.precision("advance_paid"), currency=advance.account_currency
-			)
-
 			if advance.account_currency:
 				frappe.db.set_value(
 					self.doctype, self.name, "party_account_currency", advance.account_currency
 				)
 
-			if advance.account_currency == self.currency:
-				order_total = self.get("rounded_total") or self.grand_total
-				precision = "rounded_total" if self.get("rounded_total") else "grand_total"
-			else:
-				order_total = self.get("base_rounded_total") or self.base_grand_total
-				precision = "base_rounded_total" if self.get("base_rounded_total") else "base_grand_total"
-
-			formatted_order_total = fmt_money(
-				order_total, precision=self.precision(precision), currency=advance.account_currency
-			)
-
-			if self.currency == self.company_currency and advance_paid > order_total:
-				frappe.throw(
-					_(
-						"Total advance ({0}) against Order {1} cannot be greater than the Grand Total ({2})"
-					).format(formatted_advance_paid, self.name, formatted_order_total)
-				)
-
-			self.db_set("advance_paid", advance_paid)
+		self.db_set("advance_paid", advance_paid)
 
 	@property
 	def company_abbr(self):
@@ -2572,6 +2558,7 @@ class AccountsController(TransactionBase):
 
 		self.payment_schedule = []
 		self.payment_terms_template = po_or_so.payment_terms_template
+		posting_date = self.get("bill_date") or self.get("posting_date") or self.get("transaction_date")
 
 		for schedule in po_or_so.payment_schedule:
 			payment_schedule = {
@@ -2584,6 +2571,17 @@ class AccountsController(TransactionBase):
 			}
 
 			if automatically_fetch_payment_terms:
+				if schedule.due_date_based_on:
+					payment_schedule["due_date"] = get_due_date(schedule, posting_date)
+					payment_schedule["due_date_based_on"] = schedule.due_date_based_on
+					payment_schedule["credit_days"] = cint(schedule.credit_days)
+					payment_schedule["credit_months"] = cint(schedule.credit_months)
+
+				if schedule.discount_validity_based_on:
+					payment_schedule["discount_date"] = get_discount_date(schedule, posting_date)
+					payment_schedule["discount_validity_based_on"] = schedule.discount_validity_based_on
+					payment_schedule["discount_validity"] = cint(schedule.discount_validity)
+
 				payment_schedule["payment_amount"] = flt(
 					grand_total * flt(payment_schedule["invoice_portion"]) / 100,
 					schedule.precision("payment_amount"),
@@ -2914,64 +2912,6 @@ class AccountsController(TransactionBase):
 
 	def get_advance_payment_doctypes(self) -> list:
 		return _get_advance_payment_doctypes()
-
-	def make_advance_payment_ledger_for_journal(self):
-		advance_payment_doctypes = self.get_advance_payment_doctypes()
-		advance_doctype_references = [
-			x for x in self.accounts if x.reference_type in advance_payment_doctypes
-		]
-
-		for x in advance_doctype_references:
-			# Looking for payments
-			dr_or_cr = (
-				"credit_in_account_currency"
-				if x.account_type == "Receivable"
-				else "debit_in_account_currency"
-			)
-
-			amount = x.get(dr_or_cr)
-			if amount > 0:
-				doc = frappe.new_doc("Advance Payment Ledger Entry")
-				doc.company = self.company
-				doc.voucher_type = self.doctype
-				doc.voucher_no = self.name
-				doc.against_voucher_type = x.reference_type
-				doc.against_voucher_no = x.reference_name
-				doc.amount = amount if self.docstatus == 1 else -1 * amount
-				doc.event = "Submit" if self.docstatus == 1 else "Cancel"
-				doc.currency = x.account_currency
-				doc.flags.ignore_permissions = 1
-				doc.save()
-
-	def make_advance_payment_ledger_for_payment(self):
-		advance_payment_doctypes = self.get_advance_payment_doctypes()
-		advance_doctype_references = [
-			x for x in self.references if x.reference_doctype in advance_payment_doctypes
-		]
-		currency = (
-			self.paid_from_account_currency
-			if self.payment_type == "Receive"
-			else self.paid_to_account_currency
-		)
-		for x in advance_doctype_references:
-			doc = frappe.new_doc("Advance Payment Ledger Entry")
-			doc.company = self.company
-			doc.voucher_type = self.doctype
-			doc.voucher_no = self.name
-			doc.against_voucher_type = x.reference_doctype
-			doc.against_voucher_no = x.reference_name
-			doc.amount = x.allocated_amount if self.docstatus == 1 else -1 * x.allocated_amount
-			doc.currency = currency
-			doc.event = "Submit" if self.docstatus == 1 else "Cancel"
-			doc.flags.ignore_permissions = 1
-			doc.save()
-
-	def make_advance_payment_ledger_entries(self):
-		if self.docstatus != 0:
-			if self.doctype == "Journal Entry":
-				self.make_advance_payment_ledger_for_journal()
-			elif self.doctype == "Payment Entry":
-				self.make_advance_payment_ledger_for_payment()
 
 	def set_transaction_currency_and_rate_in_gl_map(self, gl_entries):
 		for x in gl_entries:
@@ -3441,14 +3381,27 @@ def get_payment_term_details(
 		term = frappe.get_doc("Payment Term", term)
 	else:
 		term_details.payment_term = term.payment_term
-	term_details.description = term.description
-	term_details.invoice_portion = term.invoice_portion
+
+	fields_to_copy = [
+		"description",
+		"invoice_portion",
+		"discount_type",
+		"discount",
+		"mode_of_payment",
+		"due_date_based_on",
+		"credit_days",
+		"credit_months",
+		"discount_validity_based_on",
+		"discount_validity",
+	]
+
+	for field in fields_to_copy:
+		term_details[field] = term.get(field)
+
 	term_details.payment_amount = flt(term.invoice_portion) * flt(grand_total) / 100
 	term_details.base_payment_amount = flt(term.invoice_portion) * flt(base_grand_total) / 100
-	term_details.discount_type = term.discount_type
-	term_details.discount = term.discount
 	term_details.outstanding = term_details.payment_amount
-	term_details.mode_of_payment = term.mode_of_payment
+	term_details.base_outstanding = term_details.base_payment_amount
 
 	if bill_date:
 		term_details.due_date = get_due_date(term, bill_date)
@@ -3467,11 +3420,11 @@ def get_due_date(term, posting_date=None, bill_date=None):
 	due_date = None
 	date = bill_date or posting_date
 	if term.due_date_based_on == "Day(s) after invoice date":
-		due_date = add_days(date, term.credit_days)
+		due_date = add_days(date, cint(term.credit_days))
 	elif term.due_date_based_on == "Day(s) after the end of the invoice month":
-		due_date = add_days(get_last_day(date), term.credit_days)
+		due_date = add_days(get_last_day(date), cint(term.credit_days))
 	elif term.due_date_based_on == "Month(s) after the end of the invoice month":
-		due_date = get_last_day(add_months(date, term.credit_months))
+		due_date = get_last_day(add_months(date, cint(term.credit_months)))
 	return due_date
 
 
@@ -3479,11 +3432,11 @@ def get_discount_date(term, posting_date=None, bill_date=None):
 	discount_validity = None
 	date = bill_date or posting_date
 	if term.discount_validity_based_on == "Day(s) after invoice date":
-		discount_validity = add_days(date, term.discount_validity)
+		discount_validity = add_days(date, cint(term.discount_validity))
 	elif term.discount_validity_based_on == "Day(s) after the end of the invoice month":
-		discount_validity = add_days(get_last_day(date), term.discount_validity)
+		discount_validity = add_days(get_last_day(date), cint(term.discount_validity))
 	elif term.discount_validity_based_on == "Month(s) after the end of the invoice month":
-		discount_validity = get_last_day(add_months(date, term.discount_validity))
+		discount_validity = get_last_day(add_months(date, cint(term.discount_validity)))
 	return discount_validity
 
 
