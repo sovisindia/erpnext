@@ -30,6 +30,7 @@ class StockSettings(Document):
 		allow_from_pr: DF.Check
 		allow_internal_transfer_at_arms_length_price: DF.Check
 		allow_negative_stock: DF.Check
+		allow_negative_stock_for_batch: DF.Check
 		allow_partial_reservation: DF.Check
 		allow_to_edit_stock_uom_qty_for_purchase: DF.Check
 		allow_to_edit_stock_uom_qty_for_sales: DF.Check
@@ -67,6 +68,7 @@ class StockSettings(Document):
 		update_price_list_based_on: DF.Literal["Rate", "Price List Rate"]
 		use_naming_series: DF.Check
 		use_serial_batch_fields: DF.Check
+		validate_material_transfer_warehouses: DF.Check
 		valuation_method: DF.Literal["FIFO", "Moving Average", "LIFO"]
 	# end: auto-generated types
 
@@ -108,6 +110,22 @@ class StockSettings(Document):
 		self.validate_auto_insert_price_list_rate_if_missing()
 		self.change_precision_for_for_sales()
 		self.change_precision_for_purchase()
+		self.validate_do_not_use_batchwise_valuation()
+
+	def validate_do_not_use_batchwise_valuation(self):
+		doc_before_save = self.get_doc_before_save()
+		if not doc_before_save:
+			return
+
+		if not frappe.get_all("Serial and Batch Bundle", filters={"docstatus": 1}, limit=1, pluck="name"):
+			return
+
+		if doc_before_save.do_not_use_batchwise_valuation and not self.do_not_use_batchwise_valuation:
+			frappe.throw(
+				_("Cannot disable {0} as it may lead to incorrect stock valuation.").format(
+					frappe.bold(_("Do Not Use Batchwise Valuation"))
+				)
+			)
 
 	def validate_warehouses(self):
 		warehouse_fields = ["default_warehouse", "sample_retention_warehouse"]
@@ -185,26 +203,6 @@ class StockSettings(Document):
 							frappe.bold(_("Allow Negative Stock")), frappe.bold(_("Stock Reservation"))
 						)
 					)
-
-				else:
-					# Don't allow if there are negative stock
-					from frappe.query_builder.functions import Round
-
-					precision = frappe.db.get_single_value("System Settings", "float_precision") or 3
-					bin = frappe.qb.DocType("Bin")
-					bin_with_negative_stock = (
-						frappe.qb.from_(bin)
-						.select(bin.name)
-						.where(Round(bin.actual_qty, precision) < 0)
-						.limit(1)
-					).run()
-
-					if bin_with_negative_stock:
-						frappe.throw(
-							_("As there are negative stock, you can not enable {0}.").format(
-								frappe.bold(_("Stock Reservation"))
-							)
-						)
 
 			# Enable -> Disable
 			else:
